@@ -14,6 +14,7 @@ export const AuthPage = () => {
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [orgCode, setOrgCode] = useState('');
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
   const { toast } = useToast();
 
   const handleSignUp = async (e: React.FormEvent) => {
@@ -66,13 +67,41 @@ export const AuthPage = () => {
       if (error) throw error;
 
       toast({
-        title: "Welcome back!",
+        title: "Welcome back! 🌙",
         description: "Great to see you again",
       });
     }
     catch (error: any) {
       toast({
         title: "Sign in failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email) return;
+
+    setIsLoading(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/auth/reset`,
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Reset link sent! 📧",
+        description: "Check your email for a password reset link",
+      });
+      setShowForgotPassword(false);
+    } catch (error: any) {
+      toast({
+        title: "Reset failed",
         description: error.message,
         variant: "destructive",
       });
@@ -146,6 +175,16 @@ export const AuthPage = () => {
                     <LogIn className="w-4 h-4 mr-2" />
                     {isLoading ? 'Signing in...' : 'Sign In'}
                   </Button>
+                  
+                  <div className="text-center">
+                    <button
+                      type="button"
+                      onClick={() => setShowForgotPassword(true)}
+                      className="text-sm text-primary hover:underline"
+                    >
+                      Forgot your password?
+                    </button>
+                  </div>
                 </form>
               </TabsContent>
               
@@ -220,6 +259,49 @@ export const AuthPage = () => {
             </Tabs>
           </CardContent>
         </Card>
+
+        {showForgotPassword && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+            <Card className="w-full max-w-md">
+              <CardHeader>
+                <CardTitle>Reset Password</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleForgotPassword} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="reset-email">Email</Label>
+                    <Input
+                      id="reset-email"
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="you@example.com"
+                      required
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <Button 
+                      type="submit" 
+                      variant="gradient"
+                      disabled={isLoading}
+                      className="flex-1"
+                    >
+                      {isLoading ? 'Sending...' : 'Send Reset Link'}
+                    </Button>
+                    <Button 
+                      type="button" 
+                      variant="outline"
+                      onClick={() => setShowForgotPassword(false)}
+                      className="flex-1"
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </form>
+              </CardContent>
+            </Card>
+          </div>
+        )}
         
         <div className="text-center mt-6">
           <p className="text-sm text-primary-foreground/60">
