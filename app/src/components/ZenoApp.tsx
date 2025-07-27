@@ -174,10 +174,19 @@ export const ZenoApp = () => {
       is_user: true,
     });
 
-    setTimeout(async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke('chat-with-gemini', {
+        body: {
+          message: message,
+          userId: user.id,
+        },
+      });
+
+      if (error) throw error;
+
       const aiResponse: Message = {
         id: (Date.now() + 1).toString(),
-        content: "Thanks for sharing! I'm here to help you with your sleep wellness journey. 😊",
+        content: data.response || "I'm here to help with your sleep wellness! 😊",
         isUser: false,
         timestamp: new Date(),
       };
@@ -189,7 +198,25 @@ export const ZenoApp = () => {
         message: aiResponse.content,
         is_user: false,
       });
-    }, 1000);
+    }
+    catch (error) {
+      console.error('Error calling Gemini:', error);
+      
+      const fallbackResponse: Message = {
+        id: (Date.now() + 1).toString(),
+        content: "Sorry, I'm having trouble right now. How about we chat about your sleep anyway? 😊",
+        isUser: false,
+        timestamp: new Date(),
+      };
+      
+      setMessages(prev => [...prev, fallbackResponse]);
+      
+      await supabase.from('chat_messages').insert({
+        user_id: user.id,
+        message: fallbackResponse.content,
+        is_user: false,
+      });
+    }
   };
 
   const handleLogout = async () => {

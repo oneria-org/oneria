@@ -37,15 +37,12 @@ export const AuthPage = () => {
 
       toast({
         title: "Welcome to Zeno! 🌙",
-        description: "Please check your email to confirm your account",
+        description: "Check your email to confirm your account",
       });
-    }
-    
-    catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+    } catch (error: any) {
       toast({
         title: "Sign up failed",
-        description: (error as Error).message,
+        description: error.message,
         variant: "destructive",
       });
     }
@@ -73,11 +70,10 @@ export const AuthPage = () => {
         description: "Great to see you again",
       });
     }
-    catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+    catch (error: any) {
       toast({
         title: "Sign in failed",
-        description: (error as Error).message,
+        description: error.message,
         variant: "destructive",
       });
     } finally {

@@ -103,7 +103,6 @@ export const QuickLogForm = ({ onSubmit, isLoading, existingLog }: QuickLogFormP
               />
             </div>
 
-            {/* Fatigue level */}
             <div className="space-y-3">
               <Label>How tired do you feel today?</Label>
               <div className="space-y-3">

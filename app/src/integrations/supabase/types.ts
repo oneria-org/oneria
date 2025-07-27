@@ -39,29 +39,82 @@ export type Database = {
         }
         Relationships: []
       }
+      org_invite_codes: {
+        Row: {
+          code: string
+          created_at: string | null
+          created_by: string
+          current_uses: number | null
+          expires_at: string | null
+          id: string
+          is_active: boolean | null
+          max_uses: number | null
+          organization_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          code: string
+          created_at?: string | null
+          created_by: string
+          current_uses?: number | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          max_uses?: number | null
+          organization_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          code?: string
+          created_at?: string | null
+          created_by?: string
+          current_uses?: number | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          max_uses?: number | null
+          organization_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "org_invite_codes_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organizations: {
         Row: {
           admin_email: string
           created_at: string
+          description: string | null
           id: string
           name: string
           referral_code: string
+          settings: Json | null
           updated_at: string
         }
         Insert: {
           admin_email: string
           created_at?: string
+          description?: string | null
           id?: string
           name: string
           referral_code: string
+          settings?: Json | null
           updated_at?: string
         }
         Update: {
           admin_email?: string
           created_at?: string
+          description?: string | null
           id?: string
           name?: string
           referral_code?: string
+          settings?: Json | null
           updated_at?: string
         }
         Relationships: []
@@ -154,7 +207,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      is_admin_of_org: {
+        Args: { check_user_id: string; target_org_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never
