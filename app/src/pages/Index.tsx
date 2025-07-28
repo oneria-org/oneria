@@ -12,8 +12,13 @@ const Index = () => {
   const [session, setSession] = useState<Session | null>(null);
   const [showAuth, setShowAuth] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [userProfile, setUserProfile] = useState<any>(null);
-  const [organization, setOrganization] = useState<any>(null);
+  const [userProfile, setUserProfile] = useState<{
+    user_id: string;
+    organization_id?: string;
+    is_admin?: boolean;
+    organizations?: { name: string };
+  } | null>(null);
+  const [organization, setOrganization] = useState<{ name: string } | null>(null);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(

@@ -40,10 +40,10 @@ export const AuthPage = () => {
         title: "Welcome to Zeno! 🌙",
         description: "Check your email to confirm your account",
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: "Sign up failed",
-        description: error.message,
+        description: error instanceof Error ? error.message : "An error occurred",
         variant: "destructive",
       });
     }
@@ -71,10 +71,10 @@ export const AuthPage = () => {
         description: "Great to see you again",
       });
     }
-    catch (error: any) {
+    catch (error: unknown) {
       toast({
         title: "Sign in failed",
-        description: error.message,
+        description: error instanceof Error ? error.message : "An error occurred",
         variant: "destructive",
       });
     } finally {
@@ -99,10 +99,10 @@ export const AuthPage = () => {
         description: "Check your email for a password reset link",
       });
       setShowForgotPassword(false);
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: "Reset failed",
-        description: error.message,
+        description: error instanceof Error ? error.message : "An error occurred",
         variant: "destructive",
       });
     } finally {

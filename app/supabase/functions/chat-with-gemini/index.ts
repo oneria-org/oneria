@@ -116,10 +116,10 @@ Respond naturally and helpfully:`
     return new Response(JSON.stringify({ response: aiResponse }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error in chat-with-gemini function:', error);
     return new Response(JSON.stringify({ 
-      error: error.message,
+      error: error instanceof Error ? error.message : "An error occurred",
       response: "Sorry, I'm having trouble right now. How about we chat about your sleep anyway? 😊"
     }), {
       status: 500,
