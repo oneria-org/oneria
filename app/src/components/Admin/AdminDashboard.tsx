@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Copy, Users, Moon, TrendingUp, Clock } from "lucide-react";
+import { Copy, Users, Moon, TrendingUp, Clock, LogOut } from "lucide-react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 
 interface AdminStats {
@@ -25,6 +26,17 @@ interface InviteCode {
   is_active: boolean;
 }
 
+interface Member {
+  id: string;
+  display_name: (string | null);
+  user_id: string;
+  joined_via_code: (string | null);
+  created_at: string;
+  recent_sleep_logs: number;
+  avg_sleep_hours: number;
+  avg_fatigue: number;
+}
+
 interface AdminDashboardProps {
   user: User;
   orgId: string;
@@ -39,12 +51,14 @@ export const AdminDashboard = ({ user, orgId, orgName }: AdminDashboardProps) =>
     averageFatigue: 0,
   });
   const [inviteCodes, setInviteCodes] = useState<InviteCode[]>([]);
+  const [members, setMembers] = useState<Member[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
     loadStats();
     loadInviteCodes();
+    loadMembers();
   }, [orgId]);
 
   const loadStats = async () => {
@@ -163,6 +177,81 @@ export const AdminDashboard = ({ user, orgId, orgName }: AdminDashboardProps) =>
       console.error('Error deactivating code:', error);
     }
   };
+  const loadMembers = async () => {
+    try {
+      const { data: profiles, error: profilesError } = await supabase.from('profiles').select('*').eq('organization_id', orgId);
+      if (profilesError){
+        throw profilesError;
+      }
+
+      const oneWeekAgo = new Date();
+      oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+
+      const membersWithStats = await Promise.all(
+        (profiles || []).map(async (profile) => {
+          const { data: recentLogs, error: logsError } = await supabase.from('sleep_logs').select('bedtime,wake_time,fatigue_level').eq('user_id',profile.user_id).gte('created_at', oneWeekAgo.toISOString());
+
+          if (logsError){
+            console.error('Error loading logs for user:', logsError);
+
+            return{
+              id: profile.id,
+              display_name: profile.display_name,
+              user_id: profile.user_id,
+              joined_via_code: profile.joined_via_code,
+              created_at: profile.created_at,
+              recent_sleep_logs: 0,
+              avg_sleep_hours: 0,
+              avg_fatigue: 0,
+            };
+          }
+
+          const sleepHours = recentLogs?.map(log => {
+            if(log.bedtime && log.wake_time) {
+              return (new Date(log.wake_time).getTime() - new Date(log.bedtime).getTime()) / (1000 * 60 * 60);
+            }
+            return 0;
+          }).filter(hours => hours > 0) || [];
+
+          const fatigueScores = recentLogs?.map(log => log.fatigue_level).filter(Boolean) || [];
+
+          return{
+            id: profile.id,
+            display_name: profile.display_name,
+            user_id: profile.user_id,
+            joined_via_code: profile.joined_via_code,
+            created_at: profile.created_at,
+            recent_sleep_logs: recentLogs?.length || 0,
+            avg_sleep_hours: sleepHours.length > 0 ? sleepHours.reduce((a, b) => a + b, 0) / sleepHours.length : 0,
+            avg_fatigue: fatigueScores.length > 0 ? fatigueScores.reduce((a, b) => a + b, 0) / fatigueScores.length : 0,
+          };
+        })
+      );
+
+      setMembers(membersWithStats);
+    } catch (error) {
+      console.error('Error loading members:', error);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      toast({
+        title: "Logged out successfully",
+        description: "You have been logged out",
+      });
+    }
+    catch (error) {
+      console.error('Error logging out:', error);
+      toast({
+        title: "Error",
+        description: "Failed to logout",
+        variant: "destructive",
+      });
+    }
+  };
 
   return (
     <div className="p-6 space-y-6">
@@ -171,6 +260,10 @@ export const AdminDashboard = ({ user, orgId, orgName }: AdminDashboardProps) =>
           <h1 className="text-3xl font-bold">Admin Dashboard</h1>
           <p className="text-muted-foreground">{orgName}</p>
         </div>
+        <Button variant="outline" onClick={handleLogout}>
+          <LogOut className="h-4 w-4 mr-2" />
+          Logout
+        </Button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -263,6 +356,61 @@ export const AdminDashboard = ({ user, orgId, orgName }: AdminDashboardProps) =>
               </div>
             ))}
           </div>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle>Organization Members</CardTitle>
+          <CardDescription>
+            View and manage all members in your organization
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Joined</TableHead>
+                <TableHead>Invite Code</TableHead>
+                <TableHead>Recent Logs</TableHead>
+                <TableHead>Avg Sleep</TableHead>
+                <TableHead>Avg Fatigue</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {members.map((member) => (
+                <TableRow key={member.id}>
+                  <TableCell className="font-medium">
+                    {member.display_name || 'No Name'}
+                  </TableCell>
+                  <TableCell>
+                    {new Date(member.created_at).toLocaleDateString()}
+                  </TableCell>
+                  <TableCell>
+                    {member.joined_via_code ? (
+                      <Badge variant="outline">{member.joined_via_code}</Badge>
+                    ) : (
+                      <span className="text-muted-foreground">Direct</span>
+                    )}
+                  </TableCell>
+                  <TableCell>{member.recent_sleep_logs}</TableCell>
+                  <TableCell>
+                    {member.avg_sleep_hours > 0 ? `${member.avg_sleep_hours.toFixed(1)}h` : '-'}
+                  </TableCell>
+                  <TableCell>
+                    {member.avg_fatigue > 0 ? `${member.avg_fatigue.toFixed(1)}/5` : '-'}
+                  </TableCell>
+                </TableRow>
+              ))}
+              {members.length === 0&&(
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center text-muted-foreground">
+                    No members found
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
         </CardContent>
       </Card>
     </div>
