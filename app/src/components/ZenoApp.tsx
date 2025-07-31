@@ -7,6 +7,8 @@ import { QuickLogForm } from "./SleepLog/QuickLogForm";
 import { AIChatInterface } from "./Chat/AIChatInterface";
 import { SleepStatsView } from "./Stats/SleepStatsView";
 import { useToast } from "@/hooks/use-toast";
+import { useGeminiChat } from "@/hooks/useGeminiChat";
+import { useSleepStats } from "@/hooks/useSleepStats";
 
 interface SleepLogData {
   bedtime: string;
@@ -32,10 +34,11 @@ export const ZenoApp = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [todaysLog, setTodaysLog] = useState<SleepLogData | null>(null);
   const { toast } = useToast();
+  const { sendMessage: sendGeminiMessage, isLoading: isGeminiLoading } = useGeminiChat(user?.id || '');
+  const { stats: sleepStats, isLoading: statsLoading } = useSleepStats(user?.id || '');
 
   // Auth state management
   useEffect(() => {
-    // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         setSession(session);
@@ -43,7 +46,6 @@ export const ZenoApp = () => {
       }
     );
 
-    // Check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
@@ -52,7 +54,6 @@ export const ZenoApp = () => {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Load today's sleep log
   useEffect(() => {
     if (user) {
       loadTodaysLog();
@@ -126,7 +127,7 @@ export const ZenoApp = () => {
       const bedtimeDate = new Date(`${today}T${data.bedtime}:00`);
       const wakeTimeDate = new Date(`${today}T${data.wakeTime}:00`);
 
-      // If wake time is before bedtime, assume wake time is next day
+      // If wake time is before bedtime, assume wake time is next day (work after testing)
       if (wakeTimeDate < bedtimeDate) {
         wakeTimeDate.setDate(wakeTimeDate.getDate() + 1);
       }
@@ -168,36 +169,17 @@ export const ZenoApp = () => {
     };
     setMessages(prev => [...prev, userMessage]);
 
-    await supabase.from('chat_messages').insert({
-      user_id: user.id,
-      message: message,
-      is_user: true,
-    });
-
     try {
-      const { data, error } = await supabase.functions.invoke('chat-with-gemini', {
-        body: {
-          message: message,
-          userId: user.id,
-        },
-      });
-
-      if (error) throw error;
-
+      const aiResponseText = await sendGeminiMessage(message);
+      
       const aiResponse: Message = {
         id: (Date.now() + 1).toString(),
-        content: data.response || "I'm here to help with your sleep wellness! 😊",
+        content: aiResponseText,
         isUser: false,
         timestamp: new Date(),
       };
       
       setMessages(prev => [...prev, aiResponse]);
-      
-      await supabase.from('chat_messages').insert({
-        user_id: user.id,
-        message: aiResponse.content,
-        is_user: false,
-      });
     }
     catch (error) {
       console.error('Error calling Gemini:', error);
@@ -210,12 +192,6 @@ export const ZenoApp = () => {
       };
       
       setMessages(prev => [...prev, fallbackResponse]);
-      
-      await supabase.from('chat_messages').insert({
-        user_id: user.id,
-        message: fallbackResponse.content,
-        is_user: false,
-      });
     }
   };
 
@@ -231,17 +207,6 @@ export const ZenoApp = () => {
     }
   };
 
-  const mockStats = {
-    averageSleepHours: 7.2,
-    averageFatigue: 3.4,
-    totalLogs: 12,
-    streakDays: 5,
-    recentLogs: [
-      { date: 'Today', sleepHours: 7.5, fatigueLevel: 4 },
-      { date: 'Yesterday', sleepHours: 6.8, fatigueLevel: 3 },
-      { date: '2 days ago', sleepHours: 8.2, fatigueLevel: 5 },
-    ],
-  };
 
   if (!user) {
     return (
@@ -275,13 +240,13 @@ export const ZenoApp = () => {
             <AIChatInterface
               messages={messages}
               onSendMessage={handleSendMessage}
-              isLoading={false}
+              isLoading={isGeminiLoading}
             />
           </div>
         )}
         
         {activeTab === 'stats' && (
-          <SleepStatsView stats={mockStats} />
+          <SleepStatsView stats={sleepStats} />
         )}
       </main>
 
