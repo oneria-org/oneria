@@ -9,6 +9,7 @@ import { SleepStatsView } from "./Stats/SleepStatsView";
 import { useToast } from "@/hooks/use-toast";
 import { useGeminiChat } from "@/hooks/useGeminiChat";
 import { useSleepStats } from "@/hooks/useSleepStats";
+import { OrgLink } from "./OrgLink";
 
 interface SleepLogData {
   bedtime: string;
@@ -127,7 +128,7 @@ export const ZenoApp = () => {
       const bedtimeDate = new Date(`${today}T${data.bedtime}:00`);
       const wakeTimeDate = new Date(`${today}T${data.wakeTime}:00`);
 
-      // If wake time is before bedtime, assume wake time is next day (work after testing)
+      // If wake time is before bedtime, assume wake time is next day (seems to work after testing)
       if (wakeTimeDate < bedtimeDate) {
         wakeTimeDate.setDate(wakeTimeDate.getDate() + 1);
       }
@@ -225,6 +226,7 @@ export const ZenoApp = () => {
         userName={user?.user_metadata?.display_name || user?.email?.split('@')[0]} 
         onLogout={handleLogout}
       />
+      <OrgLink />
       
       <main className="flex-1 pb-20">
         {activeTab === 'log' && (
