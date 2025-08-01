@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,7 +15,19 @@ export const AuthPage = () => {
   const [displayName, setDisplayName] = useState('');
   const [orgCode, setOrgCode] = useState('');
   const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [defaultTab, setDefaultTab] = useState('signup');
   const { toast } = useToast();
+
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const codeParam = urlParams.get('code');
+    if (codeParam) {
+      setOrgCode(codeParam.toUpperCase());
+      setDefaultTab('signup');
+    } else {
+      setDefaultTab('signin');
+    }
+  }, []);
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -128,12 +140,11 @@ export const AuthPage = () => {
             <CardTitle className="text-center">Get Started</CardTitle>
           </CardHeader>
           <CardContent>
-            <Tabs defaultValue="signin" className="w-full">
+            <Tabs defaultValue={defaultTab} className="w-full">
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="signin">Sign In</TabsTrigger>
                 <TabsTrigger value="signup">Sign Up</TabsTrigger>
               </TabsList>
-              
               <TabsContent value="signin">
                 <form onSubmit={handleSignIn} className="space-y-4">
                   <div className="space-y-2">

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,7 +16,17 @@ export const OrgSetupForm = ({ onComplete }: OrgSetupFormProps) => {
   const [orgName, setOrgName] = useState("");
   const [adminEmail, setAdminEmail] = useState("");
   const [inviteCode, setInviteCode] = useState("");
+  const [defaultTab, setDefaultTab] = useState("create");
   const { toast } = useToast();
+
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const codeParam = urlParams.get('code');
+    if (codeParam) {
+      setInviteCode(codeParam.toUpperCase());
+      setDefaultTab("join");
+    }
+  }, []);
 
   const createOrganization = async () => {
     if (!orgName.trim() || !adminEmail.trim()) {
@@ -174,7 +184,7 @@ export const OrgSetupForm = ({ onComplete }: OrgSetupFormProps) => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue="create" className="w-full">
+          <Tabs defaultValue={defaultTab} className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="create">Create New</TabsTrigger>
               <TabsTrigger value="join">Join Existing</TabsTrigger>

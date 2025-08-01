@@ -6,9 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Copy, Users, Moon, TrendingUp, Clock, LogOut } from "lucide-react";
+import { Copy, Users, Moon, TrendingUp, Clock, LogOut, QrCode } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
+import { QRCode } from "@/components/QRCode";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 interface AdminStats {
   totalMembers: number;
@@ -336,6 +338,35 @@ export const AdminDashboard = ({ user, orgId, orgName }: AdminDashboardProps) =>
                   </span>
                 </div>
                 <div className="flex items-center space-x-2">
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button variant="outline" size="sm">
+                        <QrCode className="h-4 w-4" />
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-md">
+                      <DialogHeader>
+                        <DialogTitle>QR Code for {code.code}</DialogTitle>
+                      </DialogHeader>
+                      <div className="flex flex-col items-center space-y-4">
+                        <QRCode value={`https://app.oneria.org/?code=${code.code}`} size={200} />
+                        <div className="text-center">
+                          <p className="text-sm text-muted-foreground mb-2">
+                            Scan this QR code to join with invite code:
+                          </p>
+                          <code className="font-mono text-lg bg-muted px-2 py-1 rounded">{code.code}</code>
+                        </div>
+                        <Button 
+                          variant="outline" 
+                          onClick={() => copyCode(`https://app.oneria.org/?code=${code.code}`)}
+                          className="w-full"
+                        >
+                          <Copy className="h-4 w-4 mr-2" />
+                          Copy Link
+                        </Button>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
                   <Button
                     variant="outline"
                     size="sm"

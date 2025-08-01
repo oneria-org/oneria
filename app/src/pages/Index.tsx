@@ -21,6 +21,14 @@ const Index = () => {
   const [organization, setOrganization] = useState<{ name: string } | null>(null);
 
   useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const codeParam = urlParams.get('code');
+    if (codeParam && !user) {
+      setShowAuth(true);
+    }
+  }, [user]);
+
+  useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         setSession(session);
