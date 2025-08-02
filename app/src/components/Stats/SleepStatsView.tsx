@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart3, Clock, TrendingUp, Calendar } from "lucide-react";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 interface SleepStats {
   averageSleepHours: number;
@@ -7,6 +8,12 @@ interface SleepStats {
   totalLogs: number;
   streakDays: number;
   recentLogs: {
+    date: string;
+    sleepHours: number;
+    fatigueLevel: number;
+  }[];
+
+  trendData: {
     date: string;
     sleepHours: number;
     fatigueLevel: number;
@@ -122,6 +129,79 @@ export const SleepStatsView = ({ stats }: SleepStatsViewProps) => {
           )}
         </CardContent>
       </Card>
+
+      {stats.trendData && (stats.trendData.length > 0) &&(
+        <Card className="shadow-soft">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <TrendingUp className="w-5 h-5 text-primary"/>
+              Sleep Trends
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-48">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={stats.trendData}>
+                  <CartesianGrid strokeDasharray="3 3" className="opacity-30"/>
+                  <XAxis 
+                    dataKey="date" 
+                    tick={{fontSize: 10}}
+                    tickFormatter={(value)=>{
+                      const date = new Date(value);
+                      return `${date.getMonth() + 1}/${date.getDate()}`;
+                    }}
+                  />
+                  <YAxis 
+                    yAxisId="hours"
+                    orientation="left"
+                    tick={{fontSize: 10}}
+                    domain={[0, 12]}
+                  />
+                  <YAxis 
+                    yAxisId="fatigue"
+                    orientation="right"
+                    tick={{fontSize: 10}}
+                    domain={[1, 5]}
+                  />
+                  <Tooltip 
+                    formatter={(value, name) => [
+                      name === 'sleepHours' ? `${value}h`:`${value}/5`,
+                      name === 'sleepHours' ? 'Sleep':'Energy'
+                    ]}
+                    labelFormatter={(label) => new Date(label).toLocaleDateString()}
+                  />
+                  <Line 
+                    yAxisId="hours"
+                    type="monotone" 
+                    dataKey="sleepHours" 
+                    stroke="hsl(var(--primary))" 
+                    strokeWidth={2}
+                    dot={{ fill: 'hsl(var(--primary))',strokeWidth: 2, r: 3 }}
+                  />
+                  <Line 
+                    yAxisId="fatigue"
+                    type="monotone" 
+                    dataKey="fatigueLevel" 
+                    stroke="hsl(var(--accent))" 
+                    strokeWidth={2}
+                    dot={{ fill: 'hsl(var(--accent))',strokeWidth: 2, r: 3 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="flex justify-center gap-4 mt-3 text-xs">
+              <div className="flex items-center gap-1">
+                <div className="w-2 h-2 rounded-full bg-primary"></div>
+                <span>Sleep Hours</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-2 h-2 rounded-full bg-accent"></div>
+                <span>Energy Level</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Card className="shadow-soft bg-gradient-secondary">
         <CardContent className="p-4">

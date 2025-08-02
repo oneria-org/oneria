@@ -11,6 +11,12 @@ interface SleepStats {
     sleepHours: number;
     fatigueLevel: number;
   }[];
+
+  trendData: {
+    date: string;
+    sleepHours: number;
+    fatigueLevel: number;
+  }[];
 }
 
 export const useSleepStats = (userId: string) => {
@@ -20,6 +26,7 @@ export const useSleepStats = (userId: string) => {
     totalLogs: 0,
     streakDays: 0,
     recentLogs: [],
+    trendData: [],
   });
   const [isLoading, setIsLoading] = useState(true);
   useEffect(() => {
@@ -58,6 +65,11 @@ export const useSleepStats = (userId: string) => {
         sleepHours: log.sleepHours,
         fatigueLevel: log.fatigue_level,
       }));
+      const trendData = logsWithHours.slice(0, 30).reverse().map(log => ({
+        date: log.log_date,
+        sleepHours: log.sleepHours,
+        fatigueLevel: log.fatigue_level,
+      }));
 
       setStats({
         averageSleepHours,
@@ -65,6 +77,7 @@ export const useSleepStats = (userId: string) => {
         totalLogs: sleepLogs.length,
         streakDays,
         recentLogs,
+        trendData,
       });
     }
     catch (error){
